@@ -2,15 +2,15 @@ import 'dart:math';
 
 import 'package:wooha/pages/game/game_constants.dart';
 import 'package:wooha/pages/game/models/board_model.dart';
+import 'package:wooha/pages/game/models/game_model.dart';
 import 'package:wooha/pages/game/models/history_model.dart';
 import 'package:wooha/pages/game/models/placement_model.dart';
 import 'package:wooha/pages/game/models/tile_position.dart';
 import 'package:wooha/pages/game/provider/game_provider.dart';
 
-typedef WinningGames = List<HistoryModel>;
 
 class GameBot {
-  static WinningGames winningGames = [];
+  static List<GameModel> processedGames = [];
 
   Future<void> processTheMoves() async {
     List<TilePosition> tilePositions = getAllPossiblePositionsByRows(GameConstants.tileRows);
@@ -21,25 +21,29 @@ class GameBot {
       var gameController = GameController(isSimulated: true);
       while (!gameController.gameEnded) {
         var randomPosition = tilePositions[Random().nextInt(tilePositions.length)];
-        var randomBool = Random().nextBool();
-        var secondRandomBool = Random().nextBool();
-        if (randomBool && secondRandomBool) {
-          gameController.endTurn();
-        }
+        var randomConsecutiveNumbers = Random().nextInt(tilePositions.length + 4) - 1;
+        var leftOrRight = Random().nextBool();
         gameController.removePiece(randomPosition.x, randomPosition.y);
+        if (randomConsecutiveNumbers > 1) {
+          for (int i = 0; i < randomConsecutiveNumbers; i++) {
+            try {
+              gameController.removePiece(randomPosition.x, (leftOrRight) ? randomPosition.y + 2 - i : randomPosition.y - 2 + i);
+            } catch (_) {}
+          }
+        }
+        gameController.endTurn();
       }
-      if (gameController.isFirstPlayerTurn) {
-        if (winningGames.any((element) => element.placementHash() == gameController.history.placementHash())) {
+        if (processedGames.map((e) => e.history).any((element) => element.placementHash() == gameController.history.placementHash())) {
           similarGeneratedGames++;
         } else {
-          print('Processing bot, similarGeneratedGames $similarGeneratedGames winningGames ${winningGames.length}');
-          winningGames.add(gameController.history);
+          print('Initializing bot, similarGeneratedGames $similarGeneratedGames processed ${processedGames.length}');
+          print(gameController.history.placementHash());
+          processedGames.add(GameModel(history: gameController.history, victoryBy: gameController.isFirstPlayerTurn ? VictoryBy.red : VictoryBy.blue));
           similarGeneratedGames = 0;
         }
-      }
       gameController.dispose();
     }
-    print('Processed bot, ${winningGames.length} winning combinations');
+    print('Initialized bot, processed ${processedGames.length}');
     return;
   }
 
@@ -50,33 +54,36 @@ class GameBot {
 
     Map<PlacementModel, int> winProbabilityMap = {};
     int winningGamesCount = 0;
-    for (var game in winningGames) {
+    for (var game in processedGames) {
       try {
-        if (game.placements.any(
+        if (game.history.placements.any(
           (historyPlacement) {
-            if(game.placements.indexWhere((element) => element == historyPlacement) % 2 == 0) return false;
+            if((game.history.placements.length - 1 - game.history.placements.indexWhere((element) => element == historyPlacement)) % 2 == 0) return false;
             return historyPlacement.placementHash() == placement.placementHash();
           },
         )) {
-          var currentPlacementIndex = game.placements.indexWhere((element) => element.placementHash() == placement.placementHash());
-          var placementKey = game.placements[currentPlacementIndex + 1];
-          winningGamesCount++;
+          var currentPlacementIndex = game.history.placements.indexWhere((element) => element.placementHash() == placement.placementHash());
 
+          var placementKey = game.history.placements[currentPlacementIndex + 1];
+
+          bool isAFinalMove = currentPlacementIndex + 2 == game.history.placements.length;
+          winningGamesCount++;
+          int winRatio = isAFinalMove ? 100 : 1;
           bool existed = false;
           winProbabilityMap.forEach(
             (key, value) {
               if (key.placementHash() == placementKey.placementHash()) {
-                winProbabilityMap[key] = winProbabilityMap[key]! + 1;
+                winProbabilityMap[key] = winProbabilityMap[key]! + winRatio;
                 existed = true;
               }
             },
           );
           if (!existed) {
-            winProbabilityMap[placementKey] = 1;
+            winProbabilityMap[placementKey] = winRatio;
           }
         }
-      } catch (e) {
-        print('BOT ERROR BOT ERROR BOT ERROR \n\n $e');
+      } catch (e, s) {
+        print('BOT ERROR BOT ERROR BOT ERROR \n\n $e\n$s');
       }
     }
 

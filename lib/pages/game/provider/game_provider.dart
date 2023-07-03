@@ -20,31 +20,42 @@ class GameController extends ChangeNotifier {
   GameController({this.isSimulated = false});
 
   void removePiece(int x, int y) {
-    if (canRemovePiece(x, y)) {
-      BoardModel newBoard = BoardModel.copy(board);
-      newBoard.placement.rows[x] = PlacementRowModel.removePiece(newBoard.placement.rows[x], y);
-      board = newBoard;
-      currentRowTaking.add(TilePosition(x, y));
-      gameEnded = hasWon();
-      if(!isSimulated) notifyListeners();
+    if (!gameEnded) {
+      if (canRemovePiece(x, y)) {
+        BoardModel newBoard = BoardModel.copy(board);
+        newBoard.placement.rows[x] = PlacementRowModel.removePiece(newBoard.placement.rows[x], y);
+        board = newBoard;
+        currentRowTaking.add(TilePosition(x, y));
+        if(hasWon()){
+          recordPlacement();
+          gameEnded = true;
+        }
+        if(!isSimulated) notifyListeners();
+      }
     }
   }
 
   void endTurn() {
-    if (currentRowTaking.isNotEmpty) {
-      if(!isSimulated && isFirstPlayerTurn){
-        var bot = GameBot();
-        print(bot.getBestMove(board.placement));
+    if (!gameEnded) {
+      if (currentRowTaking.isNotEmpty) {
+        if(!isSimulated && isFirstPlayerTurn){
+          var bot = GameBot();
+          print(bot.getBestMove(board.placement));
+        }
+        currentRowTaking = [];
+        recordPlacement();
+        isFirstPlayerTurn = !isFirstPlayerTurn;
+        if(!isSimulated) notifyListeners();
       }
-      currentRowTaking = [];
-      List<PlacementRowModel> rows = board.placement.rows.map((e) {
-        List<TileModel> tiles = e.tiles.map((e) => TileModel(e.hasPiece)).toList();
-        return PlacementRowModel(tiles: tiles);
-      }).toList();
-      history.recordPlacement(PlacementModel(rows: rows));
-      isFirstPlayerTurn = !isFirstPlayerTurn;
-      if(!isSimulated) notifyListeners();
     }
+  }
+
+  void recordPlacement(){
+    List<PlacementRowModel> rows = board.placement.rows.map((e) {
+      List<TileModel> tiles = e.tiles.map((e) => TileModel(e.hasPiece)).toList();
+      return PlacementRowModel(tiles: tiles);
+    }).toList();
+    history.recordPlacement(PlacementModel(rows: rows));
   }
 
   bool canRemovePiece(int x, int y) {
