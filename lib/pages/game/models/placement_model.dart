@@ -1,7 +1,7 @@
 import 'package:wooha/pages/game/models/row_model.dart';
 
 class PlacementModel{
-  List<PlacementRowModel> rows;
+  final List<PlacementRowModel> rows;
 
   PlacementModel({required this.rows});
 

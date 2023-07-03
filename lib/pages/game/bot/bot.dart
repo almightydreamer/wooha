@@ -21,12 +21,12 @@ class GameBot {
       var gameController = GameController(isSimulated: true);
       while (!gameController.gameEnded) {
         var randomPosition = tilePositions[Random().nextInt(tilePositions.length)];
-        gameController.removePiece(randomPosition.x, randomPosition.y);
         var randomBool = Random().nextBool();
         var secondRandomBool = Random().nextBool();
         if (randomBool && secondRandomBool) {
           gameController.endTurn();
         }
+        gameController.removePiece(randomPosition.x, randomPosition.y);
       }
       if (gameController.isFirstPlayerTurn) {
         if (winningGames.any((element) => element.placementHash() == gameController.history.placementHash())) {
@@ -35,7 +35,6 @@ class GameBot {
           print('Processing bot, similarGeneratedGames $similarGeneratedGames winningGames ${winningGames.length}');
           winningGames.add(gameController.history);
           similarGeneratedGames = 0;
-
         }
       }
       gameController.dispose();
@@ -45,10 +44,54 @@ class GameBot {
   }
 
   PlacementModel getBestMove(PlacementModel placement) {
-    var winningHistory =
-        winningGames.firstWhere((history) => history.placements.any((historyPlacement) => historyPlacement.placementHash() == placement.placementHash()));
-    var currentPlacementIndex = winningHistory.placements.indexWhere((element) => element.placementHash() == placement.placementHash());
-    return winningHistory.placements[currentPlacementIndex + 1];
+    // var winningHistory = winningGames
+    //     .firstWhere((history) => history.placements.any((historyPlacement) => historyPlacement.placementHash() == placement.placementHash()));
+    // var currentPlacementIndex = winningHistory.placements.indexWhere((element) => element.placementHash() == placement.placementHash());
+
+    Map<PlacementModel, int> winProbabilityMap = {};
+    int winningGamesCount = 0;
+    for (var game in winningGames) {
+      try {
+        if (game.placements.any(
+          (historyPlacement) {
+            if(game.placements.indexWhere((element) => element == historyPlacement) % 2 == 0) return false;
+            return historyPlacement.placementHash() == placement.placementHash();
+          },
+        )) {
+          var currentPlacementIndex = game.placements.indexWhere((element) => element.placementHash() == placement.placementHash());
+          var placementKey = game.placements[currentPlacementIndex + 1];
+          winningGamesCount++;
+
+          bool existed = false;
+          winProbabilityMap.forEach(
+            (key, value) {
+              if (key.placementHash() == placementKey.placementHash()) {
+                winProbabilityMap[key] = winProbabilityMap[key]! + 1;
+                existed = true;
+              }
+            },
+          );
+          if (!existed) {
+            winProbabilityMap[placementKey] = 1;
+          }
+        }
+      } catch (e) {
+        print('BOT ERROR BOT ERROR BOT ERROR \n\n $e');
+      }
+    }
+
+    PlacementModel? highestProbabilityPlacement;
+    int highestProbability = 0;
+
+    winProbabilityMap.forEach((placement, probability) {
+      print('$placement - $probability');
+      if (probability > highestProbability) {
+        highestProbabilityPlacement = placement;
+        highestProbability = probability;
+      }
+    });
+    print('Best move in $highestProbability games out of $winningGamesCount');
+    return highestProbabilityPlacement!;
   }
 
   List<TilePosition> getAllPossiblePositionsByRows(int rows) {

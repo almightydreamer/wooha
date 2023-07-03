@@ -25,7 +25,7 @@ class Board extends ConsumerWidget {
             (piece) => Padding(
               padding: EdgeInsets.all(GameConstants.tileDimension / 4),
               child: Tile(
-                  hasPiece: placement.rows[row].tiles[piece],
+                  hasPiece: placement.rows[row].tiles[piece].hasPiece,
                   onTap: () {
                     ref.read(gameControllerProvider).removePiece(row, piece);
                   }),

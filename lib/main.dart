@@ -5,8 +5,8 @@ import 'package:wooha/pages/game/game_constants.dart';
 import 'package:wooha/pages/main_menu/main_menu_page.dart';
 
 void main() {
-  // var bot = GameBot();
-  // bot.processTheMoves();
+  var bot = GameBot();
+  bot.processTheMoves();
   runApp(const ProviderScope(child: MyApp()));
 }
 
