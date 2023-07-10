@@ -47,6 +47,22 @@ class GameBot {
     return;
   }
 
+  Future<void> processMovesAdvanced()async {
+    List<TilePosition> tilePositions = getAllPossiblePositionsByRows(GameConstants.tileRows);
+
+    int availableMoves = getPossibleMovesCount(totalRows: GameConstants.tileRows, remainingPieces: getSumarial(GameConstants.tileRows), remainingRows: GameConstants.tileRows);
+
+    while(availableMoves != 0){
+      for(var i = 0; i<availableMoves; i++){
+        var randomPosition = tilePositions[Random().nextInt(tilePositions.length)];
+        var randomConsecutiveNumbers = Random().nextInt(tilePositions.length + 4) - 1;
+        var leftOrRight = Random().nextBool();
+
+
+      }
+    }
+  }
+
   PlacementModel getBestMove(PlacementModel placement) {
     // var winningHistory = winningGames
     //     .firstWhere((history) => history.placements.any((historyPlacement) => historyPlacement.placementHash() == placement.placementHash()));
@@ -109,5 +125,13 @@ class GameBot {
       }
     }
     return positions;
+  }
+
+  int getPossibleMovesCount({required int totalRows, required int remainingPieces, required int remainingRows}){
+    return getSumarial(remainingPieces)-getSumarial(totalRows-remainingRows);
+  }
+
+  int getSumarial(int number){
+    return (pow(number, 2) + number)~/2;
   }
 }

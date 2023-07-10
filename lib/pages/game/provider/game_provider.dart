@@ -39,8 +39,8 @@ class GameController extends ChangeNotifier {
     if (!gameEnded) {
       if (currentRowTaking.isNotEmpty) {
         if(!isSimulated && isFirstPlayerTurn){
-          var bot = GameBot();
-          print(bot.getBestMove(board.placement));
+          // var bot = GameBot();
+          // print(bot.getBestMove(board.placement));
         }
         currentRowTaking = [];
         recordPlacement();
